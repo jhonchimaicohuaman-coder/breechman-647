@@ -1,355 +1,166 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestión Escolar + Control QR</title>
-    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script src="https://unpkg.com/html5-qrcode"></script>
-</head>
-<body class="bg-gray-100 font-sans min-h-screen">
+// Listado inicial con tus 20 productos provistos
+const initialProducts = [
+    { id: "1", name: "Arroz Extra", category: "Abarrotes", quality: "Alta", content: "1 kg", price: 5.50, expiry: "15/12/2027" },
+    { id: "2", name: "Azúcar Rubia", category: "Abarrotes", quality: "Alta", content: "1 kg", price: 4.80, expiry: "20/10/2027" },
+    { id: "3", name: "Aceite Vegetal", category: "Abarrotes", quality: "Premium", content: "1 L", price: 10.50, expiry: "30/09/2027" },
+    { id: "4", name: "Leche Evaporada", category: "Lácteos", quality: "Alta", content: "400 g", price: 4.20, expiry: "15/03/2027" },
+    { id: "5", name: "Yogurt Fresa", category: "Lácteos", quality: "Alta", content: "1 L", price: 7.50, expiry: "20/08/2026" },
+    { id: "6", name: "Queso Fresco", category: "Lácteos", quality: "Media", content: "500 g", price: 12.00, expiry: "18/07/2026" },
+    { id: "7", name: "Pan Integral", category: "Panadería", quality: "Alta", content: "600 g", price: 8.50, expiry: "15/06/2026" },
+    { id: "8", name: "Galletas de Vainilla", category: "Snacks", quality: "Alta", content: "300 g", price: 3.80, expiry: "10/01/2027" },
+    { id: "9", name: "Atún en Conserva", category: "Conservas", quality: "Premium", content: "170 g", price: 6.50, expiry: "15/05/2028" },
+    { id: "10", name: "Fideos Espagueti", category: "Abarrotes", quality: "Alta", content: "500 g", price: 3.50, expiry: "30/11/2027" },
+    { id: "11", name: "Café Instantáneo", category: "Bebidas", quality: "Premium", content: "200 g", price: 15.00, expiry: "25/02/2028" },
+    { id: "12", name: "Agua Mineral", category: "Bebidas", quality: "Alta", content: "625 ml", price: 2.00, expiry: "15/01/2028" },
+    { id: "13", name: "Gaseosa Cola", category: "Bebidas", quality: "Alta", content: "3 L", price: 11.50, expiry: "20/12/2026" },
+    { id: "14", name: "Jugo de Naranja", category: "Bebidas", quality: "Alta", content: "1 L", price: 6.80, expiry: "15/09/2026" },
+    { id: "15", name: "Chocolate en Barra", category: "Dulces", quality: "Premium", content: "100 g", price: 4.50, expiry: "30/10/2027" },
+    { id: "16", name: "Detergente en Polvo", category: "Limpieza", quality: "Alta", content: "1 kg", price: 12.50, expiry: "01/05/2029" },
+    { id: "17", name: "Jabón de Tocador", category: "Higiene", quality: "Alta", content: "125 g", price: 2.50, expiry: "15/07/2029" },
+    { id: "18", name: "Shampoo Familiar", category: "Higiene", quality: "Premium", content: "750 ml", price: 18.00, expiry: "20/11/2028" },
+    { id: "19", name: "Papel Higiénico (4 rollos)", category: "Higiene", quality: "Alta", content: "Pack", price: 9.00, expiry: "No aplica" },
+    { id: "20", name: "Huevos de Gallina", category: "Perecibles", quality: "Alta", content: "Docena", price: 9.50, expiry: "20/06/2026" }
+];
 
-    <div class="container mx-auto p-4 max-w-6xl">
-        <header class="bg-blue-600 text-white p-6 rounded-lg shadow-md mb-6 flex flex-col md:flex-row justify-between items-center gap-4">
-            <div>
-                <h1 class="text-2xl font-bold">Sistema de Gestión de Estudiantes</h1>
-                <p class="text-sm text-blue-100">Control de Asistencia por QR y Calendario</p>
-            </div>
-            <div class="flex gap-2">
-                <button onclick="abrirFormularioEstudiante()" class="bg-green-500 hover:bg-green-600 px-4 py-2 rounded font-semibold transition text-sm cursor-pointer">+ Nuevo Estudiante</button>
-                <button onclick="exportarBackup()" class="bg-purple-500 hover:bg-purple-600 px-4 py-2 rounded font-semibold transition text-sm cursor-pointer">📦 Exportar Backup (JS)</button>
-            </div>
-        </header>
+// Cargar del localStorage o usar la lista inicial por defecto
+let products = JSON.parse(localStorage.getItem('corp_inventory')) || initialProducts;
+if(!localStorage.getItem('corp_inventory')) {
+    localStorage.setItem('corp_inventory', JSON.stringify(products));
+}
 
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+let isEditing = false;
+
+// Referencias del DOM
+const productForm = document.getElementById('product-form');
+const productIdInput = document.getElementById('product-id');
+const productNameInput = document.getElementById('product-name');
+const productCategoryInput = document.getElementById('product-category');
+const productQualityInput = document.getElementById('product-quality');
+const productContentInput = document.getElementById('product-content');
+const productPriceInput = document.getElementById('product-price');
+const productExpiryInput = document.getElementById('product-expiry');
+
+const tableBody = document.getElementById('table-body');
+const emptyState = document.getElementById('empty-state');
+const totalProductsEl = document.getElementById('total-products');
+const formTitle = document.getElementById('form-title');
+const btnSubmit = document.getElementById('btn-submit');
+const btnCancel = document.getElementById('btn-cancel');
+const toast = document.getElementById('toast');
+
+document.addEventListener('DOMContentLoaded', () => {
+    renderProducts();
+    productForm.addEventListener('submit', handleFormSubmit);
+    btnCancel.addEventListener('click', resetForm);
+});
+
+function syncStorage() {
+    localStorage.setItem('corp_inventory', JSON.stringify(products));
+    renderProducts();
+}
+
+function renderProducts() {
+    tableBody.innerHTML = '';
+    
+    if (products.length === 0) {
+        emptyState.classList.remove('hidden');
+    } else {
+        emptyState.classList.add('hidden');
+        
+        products.forEach(product => {
+            const tr = document.createElement('tr');
             
-            <div class="lg:col-span-2 bg-white p-4 rounded-lg shadow-md overflow-x-auto">
-                <h2 class="text-xl font-bold mb-4 text-gray-700 border-b pb-2">Panel de Estudiantes</h2>
-                <table class="w-full text-left border-collapse text-sm">
-                    <thead>
-                        <tr class="bg-gray-200 text-gray-700 uppercase text-xs">
-                            <th class="p-3">DNI</th>
-                            <th class="p-3">Estudiante</th>
-                            <th class="p-3">Género / Edad</th>
-                            <th class="p-3">Teléfono</th>
-                            <th class="p-3 text-center">Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody id="tablaEstudiantes" class="divide-y divide-gray-200">
-                        </tbody>
-                </table>
-            </div>
-
-            <div class="space-y-6">
-                <div class="bg-white p-4 rounded-lg shadow-md">
-                    <h2 class="text-xl font-bold mb-3 text-gray-700 flex justify-between items-center">
-                        <span>Lector QR de Asistencia</span>
-                        <span class="inline-flex h-3 w-3 rounded-full bg-red-500" id="statusCamara"></span>
-                    </h2>
-                    <div id="reader" class="w-full bg-black rounded-lg overflow-hidden aspect-video mb-3"></div>
-                    <div class="flex gap-2">
-                        <button onclick="iniciarEscaneo()" class="w-full bg-blue-500 text-white py-2 rounded font-medium hover:bg-blue-600 text-sm cursor-pointer">Encender Cámara</button>
-                        <button onclick="detenerEscaneo()" class="w-full bg-gray-500 text-white py-2 rounded font-medium hover:bg-gray-600 text-sm cursor-pointer">Apagar</button>
-                    </div>
-                </div>
-
-                <div class="bg-white p-4 rounded-lg shadow-md">
-                    <div class="flex justify-between items-center mb-3">
-                        <h2 class="text-lg font-bold text-gray-700">Asistencia de Hoy</h2>
-                        <button onclick="abrirManualAsistencia()" class="text-xs bg-gray-100 hover:bg-gray-200 text-blue-600 px-2 py-1 rounded border border-blue-200 cursor-pointer">Registro Manual</button>
-                    </div>
-                    <ul id="listaAsistencias" class="divide-y divide-gray-100 text-sm max-h-48 overflow-y-auto">
-                        </ul>
-                </div>
-            </div>
-
-        </div>
-    </div>
-
-    <script>
-        // 1. DATA INICIAL (20 registros solicitados, se colocan 5 de muestra autocompletables)
-        const estudiantesIniciales = [
-            { dni: "74839201", nombres: "Alejandro Luis", apellidos: "Gomez Torres", genero: "Masculino", edad: 20, telefono: "987654321" },
-            { dni: "45920184", nombres: "Camila Fernanda", apellidos: "Rojas Mendoza", genero: "Femenino", edad: 22, telefono: "912345678" },
-            { dni: "83920174", nombres: "Mateo Sebastian", apellidos: "Castro Villalobos", genero: "Masculino", edad: 19, telefono: "934567890" },
-            { dni: "10293847", nombres: "Valeria Sofía", apellidos: "Palacios Ortiz", genero: "Femenino", edad: 21, telefono: "956789012" },
-            { dni: "62738491", nombres: "Diego Alonso", apellidos: "Quispe Ramos", genero: "Masculino", edad: 24, telefono: "923456789" }
-        ];
-
-        // Inicializar LocalStorage si está vacío
-        if (!localStorage.getItem('estudiantes')) {
-            localStorage.setItem('estudiantes', JSON.stringify(estudiantesIniciales));
-        }
-        if (!localStorage.getItem('asistencias')) {
-            localStorage.setItem('asistencias', JSON.stringify([]));
-        }
-
-        let estudiantes = JSON.parse(localStorage.getItem('estudiantes'));
-        let asistencias = JSON.parse(localStorage.getItem('asistencias'));
-        let html5QrcodeScanner = null;
-
-        // 2. RENDERIZAR TABLA DE ESTUDIANTES
-        function renderEstudiantes() {
-            const tbody = document.getElementById('tablaEstudiantes');
-            tbody.innerHTML = '';
+            // Clase CSS para badges según calidad
+            const qClass = product.quality.toLowerCase();
             
-            estudiantes.forEach((est, index) => {
-                tbody.innerHTML += `
-                    <tr class="hover:bg-gray-50 transition">
-                        <td class="p-3 font-mono font-semibold text-gray-600">${est.dni}</td>
-                        <td class="p-3">
-                            <div class="font-medium text-gray-900">${est.apellidos}, ${est.nombres}</div>
-                        </td>
-                        <td class="p-3 text-gray-600">${est.genero} (${est.edad} años)</td>
-                        <td class="p-3 text-gray-500">${est.telefono}</td>
-                        <td class="p-3 text-center space-x-1 whitespace-nowrap">
-                            <button onclick="editarEstudiante(${index})" class="bg-amber-100 hover:bg-amber-200 text-amber-800 px-2 py-1 rounded text-xs font-medium cursor-pointer">Editar</button>
-                            <button onclick="eliminarEstudiante(${index})" class="bg-red-100 hover:bg-red-200 text-red-800 px-2 py-1 rounded text-xs font-medium cursor-pointer">Eliminar</button>
-                        </td>
-                    </tr>
-                `;
-            });
-        }
+            tr.innerHTML = `
+                <td><small class="text-muted">#${product.id}</small></td>
+                <td><strong>${product.name}</strong></td>
+                <td>${product.category}</td>
+                <td><span class="badge-q ${qClass}">${product.quality}</span></td>
+                <td>${product.content}</td>
+                <td>S/. ${parseFloat(product.price).toFixed(2)}</td>
+                <td><span class="expiry-text">${product.expiry}</span></td>
+                <td class="text-center">
+                    <button class="btn-icon edit" onclick="editProduct('${product.id}')" title="Editar">
+                        <span class="material-icons-round">edit</span>
+                    </button>
+                    <button class="btn-icon delete" onclick="deleteProduct('${product.id}')" title="Eliminar">
+                        <span class="material-icons-round">delete</span>
+                    </button>
+                </td>
+            `;
+            tableBody.appendChild(tr);
+        });
+    }
+    totalProductsEl.textContent = products.length;
+}
 
-        // 3. CRUD CON SWEETALERT2
-        async function abrirFormularioEstudiante(index = null) {
-            const esEdicion = index !== null;
-            const est = esEdicion ? estudiantes[index] : { dni: '', nombres: '', apellidos: '', genero: 'Masculino', edad: '', telefono: '' };
+function handleFormSubmit(e) {
+    e.preventDefault();
+    
+    const productData = {
+        id: productIdInput.value || (Math.max(...products.map(p => parseInt(p.id) || 0), 0) + 1).toString(),
+        name: productNameInput.value.trim(),
+        category: productCategoryInput.value,
+        quality: productQualityInput.value,
+        content: productContentInput.value.trim(),
+        price: parseFloat(productPriceInput.value),
+        expiry: productExpiryInput.value.trim()
+    };
 
-            const { value: formValues } = await Swal.fire({
-                title: esEdicion ? 'Editar Estudiante' : 'Registrar Nuevo Estudiante',
-                html: `
-                    <input id="swal-dni" class="swal2-input" placeholder="DNI" value="${est.dni}" ${esEdicion ? 'disabled' : ''}>
-                    <input id="swal-nombres" class="swal2-input" placeholder="Nombres" value="${est.nombres}">
-                    <input id="swal-apellidos" class="swal2-input" placeholder="Apellidos" value="${est.apellidos}">
-                    <select id="swal-genero" class="swal2-input">
-                        <option value="Masculino" ${est.genero==='Masculino'?'selected':''}>Masculino</option>
-                        <option value="Femenino" ${est.genero==='Femenino'?'selected':''}>Femenino</option>
-                    </select>
-                    <input id="swal-edad" type="number" class="swal2-input" placeholder="Edad" value="${est.edad}">
-                    <input id="swal-telefono" class="swal2-input" placeholder="Teléfono" value="${est.telefono}">
-                `,
-                focusConfirm: false,
-                showCancelButton: true,
-                confirmButtonText: 'Guardar',
-                cancelButtonText: 'Cancelar',
-                preConfirm: () => {
-                    const dni = document.getElementById('swal-dni').value.trim();
-                    const nombres = document.getElementById('swal-nombres').value.trim();
-                    const apellidos = document.getElementById('swal-apellidos').value.trim();
-                    const genero = document.getElementById('swal-genero').value;
-                    const edad = document.getElementById('swal-edad').value;
-                    const telefono = document.getElementById('swal-telefono').value.trim();
+    if (isEditing) {
+        products = products.map(p => p.id === productData.id ? productData : p);
+        showToast('Producto actualizado exitosamente');
+    } else {
+        products.push(productData);
+        showToast('Producto añadido al inventario');
+    }
 
-                    if (!dni || !nombres || !apellidos || !edad || !telefono) {
-                        Swal.showValidationMessage('Por favor rellena todos los campos');
-                        return false;
-                    }
-                    return { dni, nombres, apellidos, genero, edad: parseInt(edad), telefono };
-                }
-            });
+    syncStorage();
+    resetForm();
+}
 
-            if (formValues) {
-                if (esEdicion) {
-                    estudiantes[index] = formValues;
-                } else {
-                    if (estudiantes.some(e => e.dni === formValues.dni)) {
-                        Swal.fire('Error', 'El DNI ya se encuentra registrado.', 'error');
-                        return;
-                    }
-                    estudiantes.push(formValues);
-                }
-                guardarYActualizar();
-                Swal.fire('¡Éxito!', esEdicion ? 'Datos actualizados.' : 'Estudiante registrado.', 'success');
-            }
-        }
+function editProduct(id) {
+    const product = products.find(p => p.id === id);
+    if (!product) return;
 
-        function editarEstudiante(index) {
-            abrirFormularioEstudiante(index);
-        }
+    isEditing = true;
+    formTitle.textContent = 'Modificar Artículo';
+    btnSubmit.innerHTML = `<span class="material-icons-round">edit</span> Aplicar Cambios`;
+    btnCancel.classList.remove('hidden');
 
-        function eliminarEstudiante(index) {
-            Swal.fire({
-                title: '¿Estás seguro?',
-                text: `Se eliminará a ${estudiantes[index].nombres}. Esta acción no se puede deshacer.`,
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#d33',
-                cancelButtonColor: '#3085d6',
-                confirmButtonText: 'Sí, eliminar',
-                cancelButtonText: 'Cancelar'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    estudiantes.splice(index, 1);
-                    guardarYActualizar();
-                    Swal.fire('Eliminado', 'El estudiante ha sido borrado.', 'success');
-                }
-            });
-        }
+    productIdInput.value = product.id;
+    productNameInput.value = product.name;
+    productCategoryInput.value = product.category;
+    productQualityInput.value = product.quality;
+    productContentInput.value = product.content;
+    productPriceInput.value = product.price;
+    productExpiryInput.value = product.expiry;
+    
+    productNameInput.focus();
+}
 
-        function guardarYActualizar() {
-            localStorage.setItem('estudiantes', JSON.stringify(estudiantes));
-            renderEstudiantes();
-        }
+function deleteProduct(id) {
+    if (confirm('¿Retirar este producto de la lista definitivamente?')) {
+        products = products.filter(p => p.id !== id);
+        showToast('Producto removido');
+        syncStorage();
+        if (productIdInput.value === id) resetForm();
+    }
+}
 
-        // 4. CONTROL DE ASISTENCIA (QR & MANUAL)
-        function iniciarEscaneo() {
-            document.getElementById('statusCamara').classList.replace('bg-red-500', 'bg-green-500');
-            
-            html5QrcodeScanner = new Html5Qrcode("reader");
-            html5QrcodeScanner.start(
-                { facingMode: "environment" }, // Prioriza cámara trasera en móviles
-                { fps: 10, qrbox: { width: 250, height: 250 } },
-                (decodedText) => {
-                    procesarAsistencia(decodedText);
-                    detenerEscaneo();
-                },
-                (errorMessage) => { /* Silenciar errores de lectura continua */ }
-            ).catch(err => {
-                Swal.fire('Error de Cámara', 'No se pudo acceder a la cámara. Asegúrate de otorgar permisos y usar HTTPS.', 'error');
-                document.getElementById('statusCamara').classList.replace('bg-green-500', 'bg-red-500');
-            });
-        }
+function resetForm() {
+    isEditing = false;
+    productForm.reset();
+    productIdInput.value = '';
+    formTitle.textContent = 'Registrar Producto';
+    btnSubmit.innerHTML = `<span class="material-icons-round">save</span> Guardar Producto`;
+    btnCancel.classList.add('hidden');
+}
 
-        function detenerEscaneo() {
-            if (html5QrcodeScanner) {
-                html5QrcodeScanner.stop().then(() => {
-                    document.getElementById('statusCamara').classList.replace('bg-green-500', 'bg-red-500');
-                });
-            }
-        }
-
-        function procesarAsistencia(dni) {
-            const estudiante = estudiantes.find(e => e.dni === dni);
-            if (!estudiante) {
-                Swal.fire('No Encontrado', `El código QR leído (DNI: ${dni}) no pertenece a ningún estudiante.`, 'error');
-                return;
-            }
-
-            const hoy = new Date().toISOString().split('T')[0];
-            const yaAsistio = asistencias.some(a => a.dni === dni && a.fecha === hoy);
-
-            if (yaAsistio) {
-                Swal.fire('Aviso', `${estudiante.nombres} ya registró asistencia el día de hoy.`, 'info');
-                return;
-            }
-
-            const hora = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-            asistencias.push({ dni, fecha: hoy, hora, estado: 'Presente' });
-            localStorage.setItem('asistencias', JSON.stringify(asistencias));
-            
-            renderAsistencias();
-            Swal.fire('Asistencia Registrada', `${estudiante.apellidos}, ${estudiante.nombres}<br><small>Hora: ${hora}</small>`, 'success');
-        }
-
-        function renderAsistencias() {
-            const lista = document.getElementById('listaAsistencias');
-            lista.innerHTML = '';
-            const hoy = new Date().toISOString().split('T')[0];
-            
-            const deHoy = asistencias.filter(a => a.fecha === hoy);
-            if (deHoy.length === 0) {
-                lista.innerHTML = `<li class="p-3 text-gray-400 text-center text-xs">Ninguna asistencia registrada hoy.</li>`;
-                return;
-            }
-
-            deHoy.forEach((asist, idx) => {
-                const est = estudiantes.find(e => e.dni === asist.dni);
-                lista.innerHTML += `
-                    <li class="py-2 flex justify-between items-center">
-                        <div>
-                            <p class="font-medium text-gray-800">${est ? est.nombres : 'Desconocido'}</p>
-                            <p class="text-xs text-gray-500">Hora: ${asist.hora} | ${asist.estado}</p>
-                        </div>
-                        <button onclick="cambiarEstadoAsistencia('${asist.dni}', '${asist.fecha}')" class="text-xs text-blue-500 hover:underline cursor-pointer">Alterar</button>
-                    </li>
-                `;
-            });
-        }
-
-        async function abrirManualAsistencia() {
-            let opciones = '';
-            estudiantes.forEach(e => {
-                opciones += `<option value="${e.dni}">${e.apellidos}, ${e.nombres}</option>`;
-            });
-
-            const { value: formValues } = await Swal.fire({
-                title: 'Registro Manual / Calendario',
-                html: `
-                    <select id="asist-dni" class="swal2-input">${opciones}</select>
-                    <input id="asist-fecha" type="date" class="swal2-input" value="${new Date().toISOString().split('T')[0]}">
-                    <select id="asist-estado" class="swal2-input">
-                        <option value="Presente">Presente</option>
-                        <option value="Tardanza">Tardanza</option>
-                        <option value="Falta">Falta</option>
-                    </select>
-                `,
-                preConfirm: () => {
-                    return {
-                        dni: document.getElementById('asist-dni').value,
-                        fecha: document.getElementById('asist-fecha').value,
-                        estado: document.getElementById('asist-estado').value,
-                        hora: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-                    }
-                }
-            });
-
-            if (formValues) {
-                // Eliminar registro previo si existiera para la misma fecha
-                asistencias = asistencias.filter(a => !(a.dni === formValues.dni && a.fecha === formValues.fecha));
-                asistencias.push(formValues);
-                localStorage.setItem('asistencias', JSON.stringify(asistencias));
-                renderAsistencias();
-                Swal.fire('Guardado', 'Control de asistencia actualizado.', 'success');
-            }
-        }
-
-        function cambiarEstadoAsistencia(dni, fecha) {
-            const registro = asistencias.find(a => a.dni === dni && a.fecha === fecha);
-            if (!registro) return;
-
-            Swal.fire({
-                title: 'Modificar Estado',
-                input: 'select',
-                inputOptions: { 'Presente': 'Presente', 'Tardanza': 'Tardanza', 'Falta': 'Falta', 'Eliminar': '⚠️ Eliminar Registro' },
-                inputValue: registro.estado,
-                showCancelButton: true
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    if (result.value === 'Eliminar') {
-                        asistencias = asistencias.filter(a => !(a.dni === dni && a.fecha === fecha));
-                    } else {
-                        registro.estado = result.value;
-                    }
-                    localStorage.setItem('asistencias', JSON.stringify(asistencias));
-                    renderAsistencias();
-                }
-            });
-        }
-
-        // 5. EXPORTACIÓN RESPALDO (BACKUP .JS)
-        function exportarBackup() {
-            const dataBackup = {
-                fecha_respaldo: new Date().toLocaleString(),
-                estudiantes: estudiantes,
-                asistencias: asistencias
-            };
-
-            // Formatear la data como código JS asignado a una constante global de entorno
-            const contenidoArchivo = `// Respaldo del Sistema de Gestión de Alumnos\nconst BACKUP_DATA = ${JSON.stringify(dataBackup, null, 4)};`;
-            
-            const blob = new Blob([contenidoArchivo], { type: "application/javascript" });
-            const link = document.createElement("a");
-            link.href = URL.createObjectURL(blob);
-            link.download = `backup_sistema_escolar_${new Date().toISOString().split('T')[0]}.js`;
-            link.click();
-            URL.revokeObjectURL(link.href);
-        }
-
-        // Ejecución Inicial
-        renderEstudiantes();
-        renderAsistencias();
-    </script>
-</body>
-</html>
+function showToast(message) {
+    toast.textContent = message;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 3000);
+}
