@@ -1,166 +1,161 @@
-// Listado inicial con tus 20 productos provistos
-const initialProducts = [
-    { id: "1", name: "Arroz Extra", category: "Abarrotes", quality: "Alta", content: "1 kg", price: 5.50, expiry: "15/12/2027" },
-    { id: "2", name: "Azúcar Rubia", category: "Abarrotes", quality: "Alta", content: "1 kg", price: 4.80, expiry: "20/10/2027" },
-    { id: "3", name: "Aceite Vegetal", category: "Abarrotes", quality: "Premium", content: "1 L", price: 10.50, expiry: "30/09/2027" },
-    { id: "4", name: "Leche Evaporada", category: "Lácteos", quality: "Alta", content: "400 g", price: 4.20, expiry: "15/03/2027" },
-    { id: "5", name: "Yogurt Fresa", category: "Lácteos", quality: "Alta", content: "1 L", price: 7.50, expiry: "20/08/2026" },
-    { id: "6", name: "Queso Fresco", category: "Lácteos", quality: "Media", content: "500 g", price: 12.00, expiry: "18/07/2026" },
-    { id: "7", name: "Pan Integral", category: "Panadería", quality: "Alta", content: "600 g", price: 8.50, expiry: "15/06/2026" },
-    { id: "8", name: "Galletas de Vainilla", category: "Snacks", quality: "Alta", content: "300 g", price: 3.80, expiry: "10/01/2027" },
-    { id: "9", name: "Atún en Conserva", category: "Conservas", quality: "Premium", content: "170 g", price: 6.50, expiry: "15/05/2028" },
-    { id: "10", name: "Fideos Espagueti", category: "Abarrotes", quality: "Alta", content: "500 g", price: 3.50, expiry: "30/11/2027" },
-    { id: "11", name: "Café Instantáneo", category: "Bebidas", quality: "Premium", content: "200 g", price: 15.00, expiry: "25/02/2028" },
-    { id: "12", name: "Agua Mineral", category: "Bebidas", quality: "Alta", content: "625 ml", price: 2.00, expiry: "15/01/2028" },
-    { id: "13", name: "Gaseosa Cola", category: "Bebidas", quality: "Alta", content: "3 L", price: 11.50, expiry: "20/12/2026" },
-    { id: "14", name: "Jugo de Naranja", category: "Bebidas", quality: "Alta", content: "1 L", price: 6.80, expiry: "15/09/2026" },
-    { id: "15", name: "Chocolate en Barra", category: "Dulces", quality: "Premium", content: "100 g", price: 4.50, expiry: "30/10/2027" },
-    { id: "16", name: "Detergente en Polvo", category: "Limpieza", quality: "Alta", content: "1 kg", price: 12.50, expiry: "01/05/2029" },
-    { id: "17", name: "Jabón de Tocador", category: "Higiene", quality: "Alta", content: "125 g", price: 2.50, expiry: "15/07/2029" },
-    { id: "18", name: "Shampoo Familiar", category: "Higiene", quality: "Premium", content: "750 ml", price: 18.00, expiry: "20/11/2028" },
-    { id: "19", name: "Papel Higiénico (4 rollos)", category: "Higiene", quality: "Alta", content: "Pack", price: 9.00, expiry: "No aplica" },
-    { id: "20", name: "Huevos de Gallina", category: "Perecibles", quality: "Alta", content: "Docena", price: 9.50, expiry: "20/06/2026" }
-];
-
-// Cargar del localStorage o usar la lista inicial por defecto
-let products = JSON.parse(localStorage.getItem('corp_inventory')) || initialProducts;
-if(!localStorage.getItem('corp_inventory')) {
-    localStorage.setItem('corp_inventory', JSON.stringify(products));
-}
-
-let isEditing = false;
-
-// Referencias del DOM
-const productForm = document.getElementById('product-form');
-const productIdInput = document.getElementById('product-id');
-const productNameInput = document.getElementById('product-name');
-const productCategoryInput = document.getElementById('product-category');
-const productQualityInput = document.getElementById('product-quality');
-const productContentInput = document.getElementById('product-content');
-const productPriceInput = document.getElementById('product-price');
-const productExpiryInput = document.getElementById('product-expiry');
-
-const tableBody = document.getElementById('table-body');
-const emptyState = document.getElementById('empty-state');
-const totalProductsEl = document.getElementById('total-products');
-const formTitle = document.getElementById('form-title');
-const btnSubmit = document.getElementById('btn-submit');
-const btnCancel = document.getElementById('btn-cancel');
-const toast = document.getElementById('toast');
-
-document.addEventListener('DOMContentLoaded', () => {
-    renderProducts();
-    productForm.addEventListener('submit', handleFormSubmit);
-    btnCancel.addEventListener('click', resetForm);
-});
-
-function syncStorage() {
-    localStorage.setItem('corp_inventory', JSON.stringify(products));
-    renderProducts();
-}
-
-function renderProducts() {
-    tableBody.innerHTML = '';
-    
-    if (products.length === 0) {
-        emptyState.classList.remove('hidden');
-    } else {
-        emptyState.classList.add('hidden');
+html
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Automatización Contable - Planillas</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <h2>Sistema de Automatización de Planillas Contables</h2>
+        <p>Introduce los datos del colaborador para calcular el sueldo neto y aportes automáticos.</p>
         
-        products.forEach(product => {
-            const tr = document.createElement('tr');
+        <form id="planillaForm">
+            <div class="form-group">
+                <label for="nombre">Nombre del Trabajador:</label>
+                <input type="text" id="nombre" required placeholder="Ej. Juan Pérez">
+            </div>
             
-            // Clase CSS para badges según calidad
-            const qClass = product.quality.toLowerCase();
+            <div class="form-group">
+                <label for="sueldo">Sueldo Base (S/.):</label>
+                <input type="number" id="sueldo" required min="0" placeholder="Ej. 1025">
+            </div>
             
-            tr.innerHTML = `
-                <td><small class="text-muted">#${product.id}</small></td>
-                <td><strong>${product.name}</strong></td>
-                <td>${product.category}</td>
-                <td><span class="badge-q ${qClass}">${product.quality}</span></td>
-                <td>${product.content}</td>
-                <td>S/. ${parseFloat(product.price).toFixed(2)}</td>
-                <td><span class="expiry-text">${product.expiry}</span></td>
-                <td class="text-center">
-                    <button class="btn-icon edit" onclick="editProduct('${product.id}')" title="Editar">
-                        <span class="material-icons-round">edit</span>
-                    </button>
-                    <button class="btn-icon delete" onclick="deleteProduct('${product.id}')" title="Eliminar">
-                        <span class="material-icons-round">delete</span>
-                    </button>
-                </td>
-            `;
-            tableBody.appendChild(tr);
-        });
-    }
-    totalProductsEl.textContent = products.length;
+            <div class="form-group">
+                <label for="afp">Régimen Pensionario:</label>
+                <select id="afp">
+                    <option value="onp">ONP (13%)</option>
+                    <option value="afp">AFP (Aprox. 12%)</option>
+                </select>
+            </div>
+            
+            <button type="button" onclick="calcularPlanilla()">Calcular y Registrar</button>
+        </form>
+
+        <hr>
+
+        <h3>Resumen de Planilla</h3>
+        <table id="tablaResultados">
+            <thead>
+                <tr>
+                    <th>Trabajador</th>
+                    <th>Sueldo Base</th>
+                    <th>Descuento Ley</th>
+                    <th>Essalud (9%)</th>
+                    <th>Neto a Pagar</th>
+                </tr>
+            </thead>
+            <tbody>
+                </tbody>
+        </table>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f4f7f6;
+    color: #333;
+    padding: 20px;
 }
 
-function handleFormSubmit(e) {
-    e.preventDefault();
+.container {
+    max-width: 650px;
+    background: #ffffff;
+    margin: 0 auto;
+    padding: 30px;
+    border-radius: 8px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+h2, h3 {
+    color: #2c3e50;
+    text-align: center;
+}
+
+.form-group {
+    margin-bottom: 15px;
+}
+
+label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 600;
+}
+
+input, select {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box;
+}
+
+button {
+    width: 100%;
+    padding: 12px;
+    background-color: #27ae60;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 16px;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+button:hover {
+    background-color: #219150;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+}
+
+th, td {
+    padding: 12px;
+    border: 1px solid #ddd;
+    text-align: left;
+}
+
+th {
+    background-color: #34495e;
+    color: white;
+}nction calcularPlanilla() {
+    // Obtener los valores del formulario
+    const nombre = document.getElementById('nombre').value;
+    const sueldo = parseFloat(document.getElementById('sueldo').value);
+    const regimen = document.getElementById('afp').value;
+
+    // Validar que los campos no estén vacíos
+    if (!nombre || isNaN(sueldo)) {
+        alert("Por favor, complete todos los campos correctamente.");
+        return;
+    }
+
+    // Lógica de automatización de cálculos de procesos contables
+    let porcentajeDescuento = (regimen === 'onp') ? 0.13 : 0.12;
+    let descuentoLey = sueldo * porcentajeDescuento;
+    let essalud = sueldo * 0.09; // Aporte del empleador
+    let netoPagar = sueldo - descuentoLey;
+
+    // Obtener la tabla para insertar el nuevo registro
+    const tabla = document.getElementById('tablaResultados').getElementsByTagName('tbody')[0];
     
-    const productData = {
-        id: productIdInput.value || (Math.max(...products.map(p => parseInt(p.id) || 0), 0) + 1).toString(),
-        name: productNameInput.value.trim(),
-        category: productCategoryInput.value,
-        quality: productQualityInput.value,
-        content: productContentInput.value.trim(),
-        price: parseFloat(productPriceInput.value),
-        expiry: productExpiryInput.value.trim()
-    };
+    // Crear una nueva fila con los resultados automatizados
+    const nuevaFila = tabla.insertRow();
 
-    if (isEditing) {
-        products = products.map(p => p.id === productData.id ? productData : p);
-        showToast('Producto actualizado exitosamente');
-    } else {
-        products.push(productData);
-        showToast('Producto añadido al inventario');
-    }
+    nuevaFila.innerHTML = `
+        <td>${nombre}</td>
+        <td>S/. ${sueldo.toFixed(2)}</td>
+        <td>S/. ${descuentoLey.toFixed(2)}</td>
+        <td>S/. ${essalud.toFixed(2)}</td>
+        <th style="color: #27ae60;">S/. ${netoPagar.toFixed(2)}</th>
+    `;
 
-    syncStorage();
-    resetForm();
-}
-
-function editProduct(id) {
-    const product = products.find(p => p.id === id);
-    if (!product) return;
-
-    isEditing = true;
-    formTitle.textContent = 'Modificar Artículo';
-    btnSubmit.innerHTML = `<span class="material-icons-round">edit</span> Aplicar Cambios`;
-    btnCancel.classList.remove('hidden');
-
-    productIdInput.value = product.id;
-    productNameInput.value = product.name;
-    productCategoryInput.value = product.category;
-    productQualityInput.value = product.quality;
-    productContentInput.value = product.content;
-    productPriceInput.value = product.price;
-    productExpiryInput.value = product.expiry;
-    
-    productNameInput.focus();
-}
-
-function deleteProduct(id) {
-    if (confirm('¿Retirar este producto de la lista definitivamente?')) {
-        products = products.filter(p => p.id !== id);
-        showToast('Producto removido');
-        syncStorage();
-        if (productIdInput.value === id) resetForm();
-    }
-}
-
-function resetForm() {
-    isEditing = false;
-    productForm.reset();
-    productIdInput.value = '';
-    formTitle.textContent = 'Registrar Producto';
-    btnSubmit.innerHTML = `<span class="material-icons-round">save</span> Guardar Producto`;
-    btnCancel.classList.add('hidden');
-}
-
-function showToast(message) {
-    toast.textContent = message;
-    toast.classList.add('show');
-    setTimeout(() => toast.classList.remove('show'), 3000);
-}
+    // Limpiar el formulario para un nuevo ingreso
+    document.getElementById('planillaForm').reset();
